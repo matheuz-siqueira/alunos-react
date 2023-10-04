@@ -11,10 +11,13 @@ function App() {
   const baseUrl = 'https://localhost:7046/api/student';
 
   const [data, setData] = useState([]);
+  const [updateDate, setUpdateData] = useState(true);
 
   const [modalIncluir, setModalIncluir] = useState(false);
 
   const [modalEditar, setModalEditar] = useState(false);
+
+  const [modalExcluir, setModalExcluir] = useState(false);
 
   const [alunoSelecionado, setAlunoSelecionado] = useState({
     id: '',
@@ -24,7 +27,7 @@ function App() {
 
   const selecionarAluno = (aluno, opcao) => {
     setAlunoSelecionado(aluno);
-    opcao == 'Editar' && abrirFechalModalEditar();
+    opcao === 'Editar' ? abrirFechalModalEditar() : abrirFechalModalExcluir();
   };
 
   const abrirFecharModalIncluir = () => {
@@ -33,6 +36,10 @@ function App() {
 
   const abrirFechalModalEditar = () => {
     setModalEditar(!modalEditar);
+  };
+
+  const abrirFechalModalExcluir = () => {
+    setModalExcluir(!modalExcluir);
   };
 
   const handleChange = (e) => {
@@ -61,6 +68,7 @@ function App() {
       .post(`${baseUrl}/create`, alunoSelecionado)
       .then((response) => {
         setData(data.concat(response.data));
+        setUpdateData(true);
         abrirFecharModalIncluir();
       })
       .catch((error) => {
@@ -80,8 +88,21 @@ function App() {
             aluno.email = resposta.email;
           }
         });
+        setUpdateData(true);
         abrirFechalModalEditar();
-        pedidoGet();
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  };
+
+  const pedidoDelete = async () => {
+    await axios
+      .delete(`${baseUrl}/${alunoSelecionado.id}`)
+      .then((response) => {
+        setData(data.filter((aluno) => aluno.id !== response.data));
+        setUpdateData(true);
+        abrirFechalModalExcluir();
       })
       .catch((error) => {
         console.log(error);
@@ -89,8 +110,11 @@ function App() {
   };
 
   useEffect(() => {
-    pedidoGet();
-  }, []);
+    if (updateDate) {
+      pedidoGet();
+      setUpdateData(false);
+    }
+  }, [updateDate]);
 
   return (
     <div className="aluno-container">
@@ -217,6 +241,26 @@ function App() {
             onClick={() => abrirFechalModalEditar()}
           >
             Cancelar
+          </button>
+        </ModalFooter>
+      </Modal>
+
+      <Modal isOpen={modalExcluir}>
+        <ModalBody>
+          Confirmar a exclusão do(a) aluno(a):
+          {alunoSelecionado && alunoSelecionado.name}?
+        </ModalBody>
+        <ModalFooter>
+          <button className="btn btn-danger" onClick={() => pedidoDelete()}>
+            {' '}
+            Sim{' '}
+          </button>
+          <button
+            className="btn btn-secondary"
+            onClick={() => abrirFechalModalExcluir()}
+          >
+            {' '}
+            Não{' '}
           </button>
         </ModalFooter>
       </Modal>
